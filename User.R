@@ -1,8 +1,7 @@
-# 01_user_input.R
-# User-facing script: set design inputs and run everything
+# Set design inputs and run everything
 # ---------------------------------------------------------------------------
 
-## Packages
+# Packages
 library(bhmbasket)
 library(dplyr)
 library(ggplot2)
@@ -12,19 +11,18 @@ library(doFuture)
 library(foreach)
 
 doFuture::registerDoFuture()
-future::plan(future::sequential())  # user can also choose multisession()
+future::plan(future::sequential())  # issue with multisession(); chunkVector()
 
-## Source helper files (functions only, do not run anything yet)
-source("02_oc_calculations.R")
-source("03_oc_plots.R")
+# Source helper files
+source("Calculations.R")
+source("Plot.R")
 
-## -------------------- USER INPUT BLOCK ---------------------------------------
-## Only edit this block to change the design.
+# Only edit this block to change the design.
 
 # True response rates under H0 and H1
 # Number of cohorts = length of these vectors.
 # To add a cohort, just append another value to p0, p1 and p_beta_vec.
-p0         <- c(0.40, 0.40)   # e.g. 2 cohorts
+p0         <- c(0.40, 0.40)   # e.g. with 2 cohorts
 p1         <- c(0.55, 0.55)
 p_beta_vec <- c(0.50, 0.50)   # clinical boundary per cohort
 
@@ -39,18 +37,17 @@ n_trials_oc  <- 100
 # E.g. "stratified", "berry", "pooled", "exnex", ...
 method_names <- c("stratified", "berry")
 
-# Coarse grid for n and gamma (broad scan)
+# Coarse grid for n and gamma
 n_grid_coarse     <- seq(10, 40, by = 5)        # candidate sample sizes per cohort
 gamma_grid_coarse <- seq(0.5, 0.95, by = 0.05)  # candidate evidence levels
 
-# Fine-grid margins (for automatic zoom around feasible region)
+# Fine-grid margins for zoom around feasible region
 n_fine_margin_n     <- 2     # extend feasible n-range by ± this many patients
 n_fine_margin_gamma <- 0.05  # extend feasible gamma-range by ± this
 
-# Random seed for reproducibility
 set.seed(2026)
 
-## -------------------- RUN CALCULATIONS ---------------------------------------
+# RUN CALCULATIONS -------------------------------------------------------------
 
 oc_list <- run_oc_calculations(
   p0                 = p0,
@@ -70,7 +67,7 @@ oc_results_coarse <- oc_list$oc_results_coarse
 oc_results_fine   <- oc_list$oc_results_fine
 oc_all            <- oc_list$oc_all
 
-## -------------------- CREATE PLOTS -------------------------------------------
+## CREATE PLOTS ----------------------------------------------------------------
 
 fig_main <- plot_oc_main(
   oc_all       = oc_all,
@@ -83,6 +80,6 @@ fig_boundary <- plot_boundary_only(
   method_names      = method_names
 )
 
-## Show plots in RStudio Viewer / browser
+# Show plots
 fig_main
 fig_boundary
