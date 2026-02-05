@@ -1,6 +1,4 @@
-# 03_oc_plots.R
-# Plot functions: main OC plot and boundary-only plot
-# ---------------------------------------------------------------------------
+# Plot functions ---------------------------------------------------------------
 
 plot_oc_main <- function(oc_all, method_names) {
 
