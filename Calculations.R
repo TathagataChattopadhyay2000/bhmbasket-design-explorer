@@ -1,6 +1,14 @@
-# 02_oc_calculations.R
-# Functions to compute OC grids (coarse + fine) for given inputs
-# ---------------------------------------------------------------------------
+# helper for boundary rules
+
+make_boundary_rules <- function(n_coh) {
+  # Builds: c(x[1] > p_beta_vec[1], ..., x[n_coh] > p_beta_vec[n_coh])
+  rule_list <- lapply(seq_len(n_coh), function(j) {
+    substitute(x[j] > p_beta_vec[j], list(j = j))
+  })
+  as.call(c(list(as.name("c")), rule_list))
+}
+
+# Functions to compute the grids (coarse + fine) for given inputs --------------
 
 run_oc_calculations <- function(p0,
                                 p1,
@@ -22,9 +30,10 @@ run_oc_calculations <- function(p0,
 
   cohort_names <- paste0("p_", seq_len(n_coh))
 
-  # Helper: run OC for one (n, gamma) pair across all methods
   run_oc_for_pair <- function(n_i, gamma_i) {
+    
     # Type I error (H0)
+    
     scen0 <- simulateScenarios(
       n_subjects_list     = list(rep(n_i, n_coh)),
       response_rates_list = list(p0),
@@ -39,18 +48,24 @@ run_oc_calculations <- function(p0,
       n_mcmc_iterations  = 100,
       verbose            = FALSE
     )
+    
+    n_coh <- length(p_beta_vec)
+    cohort_names <- paste0("p_", seq_len(n_coh))
+    
+    boundary_rules_expr <- make_boundary_rules(n_coh)
 
     decisions0 <- getGoDecisions(
       analyses_list   = analyses0,
       cohort_names    = cohort_names,
       evidence_levels = rep(gamma_i, n_coh),
-      boundary_rules  = quote(x > p_beta_vec),
+      boundary_rules  = boundary_rules_expr,
       overall_min_gos = 1
     )
 
     go_probs0 <- getGoProbabilities(decisions0)
 
     # Power (H1)
+    
     scen1 <- simulateScenarios(
       n_subjects_list     = list(rep(n_i, n_coh)),
       response_rates_list = list(p1),
@@ -65,12 +80,17 @@ run_oc_calculations <- function(p0,
       n_mcmc_iterations  = 100,
       verbose            = FALSE
     )
+    
+    n_coh <- length(p_beta_vec)
+    cohort_names <- paste0("p_", seq_len(n_coh))
+    
+    boundary_rules_expr <- make_boundary_rules(n_coh)
 
     decisions1 <- getGoDecisions(
       analyses_list   = analyses1,
       cohort_names    = cohort_names,
       evidence_levels = rep(gamma_i, n_coh),
-      boundary_rules  = quote(x > p_beta_vec),
+      boundary_rules  = boundary_rules_expr,
       overall_min_gos = 1
     )
 
@@ -129,7 +149,6 @@ run_oc_calculations <- function(p0,
   )
   oc_results_coarse$resolution <- "Coarse"
 
-  # Fine grid: zoom into feasible coarse region
   feas_coarse <- oc_results_coarse[oc_results_coarse$feasible, , drop = FALSE]
 
   if (nrow(feas_coarse) > 0L) {
